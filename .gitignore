@@ -6,5 +6,4 @@ sdkconfig
 sdkconfig.*
 *.o
 build/
-
-
+research/
