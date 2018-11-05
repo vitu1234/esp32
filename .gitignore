@@ -1,0 +1,10 @@
+*.bak
+*.pem
+*.crt
+*.key
+sdkconfig
+sdkconfig.*
+*.o
+build/
+
+
