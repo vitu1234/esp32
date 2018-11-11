@@ -366,7 +366,7 @@ void aws_iot_task(void *param) {
     uint8_t settings_sel;
     struct bme280_data comp_data;
     bool relais_on = false;
-    TickType_t last_used_tick = 0;
+    TickType_t last_used_tick = LONG_MIN;  // first loop - no last use
 
     ESP_LOGI(TAG, "App Version %s", PROJECT_VERSION);
     ESP_LOGI(TAG, "AWS IoT SDK Version %d.%d.%d-%s", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG);
@@ -533,7 +533,7 @@ void aws_iot_task(void *param) {
                         "  \"pressure\": %0.2f,"
                         "  \"humidity\": %0.2f,"
                         "  \"relais\": \"OFF\","
-                        "  \"version\": %s"
+                        "  \"version\": \"%s\""
                         "}",
                         comp_data.temperature, comp_data.pressure / 100.0, comp_data.humidity, PROJECT_VERSION
                 );
@@ -554,7 +554,7 @@ void aws_iot_task(void *param) {
                         "  \"pressure\": %0.2f,"
                         "  \"humidity\": %0.2f,"
                         "  \"relais\": \"ON\","
-                        "  \"version\": %s"
+                        "  \"version\": \"%s\""
                         "}",
                         comp_data.temperature, comp_data.pressure / 100.0, comp_data.humidity, PROJECT_VERSION
                 );
