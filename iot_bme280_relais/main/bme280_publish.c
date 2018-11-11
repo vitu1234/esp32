@@ -344,8 +344,7 @@ bool allowed_to_switch_on( TickType_t * const pxPreviousWakeTime, const TickType
         is the case it is as if neither time had overflowed. */
         if ((xTimeToStart < *pxPreviousWakeTime) &&
             (xTimeToStart > xConstTickCount)) {
-            //xShouldDelay = pdTRUE;
-            return true;
+            return false;
         }
     } else {
         /* The tick time has not overflowed.  In this case we will
@@ -353,12 +352,11 @@ bool allowed_to_switch_on( TickType_t * const pxPreviousWakeTime, const TickType
         tick time is less than the wake time. */
         if ((xTimeToStart < *pxPreviousWakeTime) ||
             (xTimeToStart > xConstTickCount)) {
-            // xShouldDelay = pdTRUE;
-            return true;
+            return false;
         }
     }
     ESP_LOGI(TAG, "not allowed to switch on yet");
-    return false;
+    return true;
 }
 
 
@@ -522,10 +520,9 @@ void aws_iot_task(void *param) {
         bme280_get_sensor_data(BME280_ALL, &comp_data, &dev1);
 
         // do we need to switch?
-        //if(relais_on) {
         if(comp_data.humidity >= RH_OFF) {
             // with this we switch off many times but this can not hurt, right!
-            // and might fix the glitch
+            // and might fix the hanging relais glitch
             gpio_set_level(GPIO_OUTPUT_PIN_RELAIS, 0);
             if(relais_on) {
                 relais_on = false;
@@ -543,12 +540,12 @@ void aws_iot_task(void *param) {
                 ESP_LOGI(TAG, "%d - #%s#", (int) params.payloadLen, (char *)params.payload);
                 params.payloadLen = strlen(payload);
                 rc = aws_iot_mqtt_publish(&client, topic, strlen(topic), &params);
-                // store tick (used to avoid relais wear)
+                // store tick (used to avoid relays wear)
                 last_used_tick = xTaskGetTickCount();
             }
         } else {
             if(!relais_on && comp_data.humidity < RH_ON &&
-                    allowed_to_switch_on(&last_used_tick, 30000.0 / portTICK_PERIOD_MS)) {
+                    allowed_to_switch_on(&last_used_tick, 180000.0 / portTICK_PERIOD_MS)) {
                 gpio_set_level(GPIO_OUTPUT_PIN_RELAIS, 1);
                 relais_on = true;
                 sprintf(payload,
@@ -568,7 +565,7 @@ void aws_iot_task(void *param) {
             }
         }
 
-        ESP_LOGI(TAG, "going to sleep");
+        ESP_LOGI(TAG, "going to sleep for 5 sec.");
         vTaskDelay(5000.0 / portTICK_PERIOD_MS);
     }
 
