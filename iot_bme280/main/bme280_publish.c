@@ -496,36 +496,25 @@ void aws_iot_task(void *param) {
         bme280_set_sensor_mode(BME280_FORCED_MODE, &dev1);
         dev1.delay_ms(40);  // Wait for the measurement to complete and print data
         bme280_get_sensor_data(BME280_ALL, &comp_data, &dev1);
-        sprintf(topic, "farm/%s/sensor01", aws_iot_client_id);
+        sprintf(topic, "farm/%s", aws_iot_client_id);
         sprintf(payload,
-            "{"
-            "  \"temperature\": %0.2f,"
-            "  \"pressure\": %0.2f,"
-            "  \"humidity\": %0.2f"
-            "}",
+            "sensor01,temperature,%0.2f\n"
+            "sensor01,pressure,%0.2f\n"
+            "sensor01,humidity,%0.2f\n",
             comp_data.temperature, comp_data.pressure / 100.0, comp_data.humidity
         );
-        params.payloadLen = strlen(payload);
-        rc = aws_iot_mqtt_publish(&client, topic, strlen(topic), &params);
-        if (rc == MQTT_REQUEST_TIMEOUT_ERROR) {
-            ESP_LOGW(TAG, "QOS0 publish ack not received.");
-            rc = SUCCESS;
-            continue;  // skip the rest of the loop and try again
-        }
 
         // sensor2
         bme280_set_sensor_mode(BME280_FORCED_MODE, &dev2);
         dev2.delay_ms(40);  // Wait for the measurement to complete and print data
         bme280_get_sensor_data(BME280_ALL, &comp_data, &dev2);
-        sprintf(topic, "farm/%s/sensor02", aws_iot_client_id);
-        sprintf(payload,
-            "{"
-            "  \"temperature\": %0.2f,"
-            "  \"pressure\": %0.2f,"
-            "  \"humidity\": %0.2f"
-            "}",
+        sprintf(payload + strlen(payload),
+            "sensor02,temperature,%0.2f\n"
+            "sensor02,pressure,%0.2f\n"
+            "sensor02,humidity,%0.2f\n",
             comp_data.temperature, comp_data.pressure / 100.0, comp_data.humidity
         );
+
         params.payloadLen = strlen(payload);
         rc = aws_iot_mqtt_publish(&client, topic, strlen(topic), &params);
         if (rc == MQTT_REQUEST_TIMEOUT_ERROR) {

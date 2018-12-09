@@ -151,8 +151,8 @@ void disconnectCallbackHandler(AWS_IoT_Client *pClient, void *data) {
 
 // relais
 #define GPIO_OUTPUT_PIN_RELAIS 22           /*!< gpio number for relais shield */
-#define RH_ON 45.0
-#define RH_OFF 50.0
+#define RH_ON 35.0
+#define RH_OFF 40.0
 
 // bme 280 related code
 #define I2C_EXAMPLE_MASTER_SCL_IO 19        /*!< gpio number for I2C master clock */

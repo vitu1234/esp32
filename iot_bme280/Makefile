@@ -3,7 +3,9 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := iot_bme280
+PROJECT_VERSION := 0.0.4
+
+PROJECT_NAME := iot_bme280_$(PROJECT_VERSION)
 
 include $(IDF_PATH)/make/project.mk
 
