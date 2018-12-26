@@ -25,4 +25,3 @@ int erpcCall(const char* req);
 void erpcAddFunction(char* fncName, void (*f)(int argc, JSMN_PARAMS_t argv));
 
 #endif /** ERPC_H */
-

@@ -17,6 +17,7 @@
  */
 
 #include <limits.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -47,27 +48,9 @@ int digitalWrite(int argc, JSMN_PARAMS_t argv)
 
 int digitalRead(int argc, JSMN_PARAMS_t argv)
 {
-    //printf("FNC: digitalRead()\n");
+    // just to illustrate having multiple functions
     return EXIT_SUCCESS;
 }
-
-
-/*
-int main ()
-{
-    printf("Hello test!\n");
-
-    // Initialize function look-up table with our functions
-    erpcAddFunction("digitalWrite", digitalWrite);
-    erpcAddFunction("digitalRead", digitalRead);
-
-    // Now we can call the function
-    erpcCall(req);
-
-    return 0;
-}
-*/
-
 
 TEST_CASE("erpc test case", "[erpc]")
 {
@@ -76,7 +59,5 @@ TEST_CASE("erpc test case", "[erpc]")
     erpcAddFunction("digitalWrite", digitalWrite);
     erpcAddFunction("digitalRead", digitalRead);
 
-    //const int v1[] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
-    //TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpcCall(req) );
     TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpcCall(req) );
 }

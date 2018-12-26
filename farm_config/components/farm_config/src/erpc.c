@@ -40,7 +40,7 @@ static unsigned char paramNb = 0;
  * fncTable is an array of function pointers.
  * Function pointers are installed by the user.
  */
-void (*fncTable[FNC_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
+int (*fncTable[FNC_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
 
 /**
  * Fowler/Noll/Vo (FNV) hash function, variant 1a
@@ -140,8 +140,7 @@ int erpcCall(const char* req)
     }
 
     /** Call the function */
-    fncTable[fncIdx](paramNb, params);
-    return 0;
+    return fncTable[fncIdx](paramNb, params);
 }
 
 /**
