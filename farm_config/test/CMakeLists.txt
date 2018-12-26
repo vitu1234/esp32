@@ -13,4 +13,4 @@ set(EXTRA_COMPONENT_DIRS "../components")
 set(TEST_COMPONENTS "farm_config" CACHE STRING "List of components to test")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(unit_test_test)
+project(farm_config_test)

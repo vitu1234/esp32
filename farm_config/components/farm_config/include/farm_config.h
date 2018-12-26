@@ -16,3 +16,6 @@
  * @return arithmetic mean of values, or zero count is zero
  */
 int testable_mean(const int* values, int count);
+
+
+int json_parse_sense(const char *json_string);
