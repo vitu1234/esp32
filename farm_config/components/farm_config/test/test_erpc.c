@@ -26,38 +26,72 @@
 #include "unity.h"
 
 
-const char *req =
-	"{\"method\": \"digital_write\", "
-	"\"params\": [\"users\", \"wheel\", \"audio\", \"video\"], \"rto\": \"/user/1234/out\"}";
+typedef struct {
+    int value
+} demo_t;
 
-
-int digital_write(int argc, JSMN_PARAMS_t argv)
+int comp123_init(int argc, JSMN_PARAMS_t argv)
 {
-    uint8_t i = 0;
+    // demo component init use
     JSMN_PARAMS_t params = {{0}};
-    JSMN_PARAMS_t expected_params = {"users", "wheel", "audio", "video"};
+    JSMN_PARAMS_t expected_params = {"119"};
 
     memcpy(params, argv, sizeof(JSMN_PARAMS_t));
     TEST_ASSERT_EQUAL_STRING(expected_params[0], argv[0]);
-    TEST_ASSERT_EQUAL_STRING(expected_params[1], argv[1]);
-    TEST_ASSERT_EQUAL_STRING(expected_params[2], argv[2]);
-    TEST_ASSERT_EQUAL_STRING(expected_params[3], argv[3]);
+
+    demo_t *s1 = malloc(sizeof(demo_t));
+    s1->value = 42;
+    return s1;
+}
+
+int comp123_work(demo_t *inst)
+{
+    // demo function use; note: this has no parameters besides the struct!
+    TEST_ASSERT_EQUAL_INT(42, inst->value);
 
     return EXIT_SUCCESS;
 }
 
-int digital_read(int argc, JSMN_PARAMS_t argv)
+TEST_CASE("erpc test add component", "[erpc]")
 {
-    // just to illustrate having multiple functions
-    return EXIT_SUCCESS;
+    erpc_add_component("comp123", comp123_init);
 }
 
-TEST_CASE("erpc test case", "[erpc]")
+TEST_CASE("erpc test add function", "[erpc]")
 {
-    static const char *JSON_STRING = "{\"type\": \"bme280\", \"params\": [119]}";  // 119 = 0x77
+    erpc_add_function("comp123_do_work", comp123_work);
+}
 
-    erpc_add_function("digital_write", digital_write);
-    erpc_add_function("digital_read", digital_read);
+TEST_CASE("erpc test comp123_work", "[erpc]")
+{
+    demo_t s1;
+    s1.value = 42;
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_call(req) );
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, comp123_work(&s1));
+}
+
+TEST_CASE("erpc test init component", "[erpc]")
+{
+    const char *config = "{"
+        "\"name\": \"inside\", "
+        "\"component\": \"comp123\", "
+        "\"params\": [\"119\"] }";
+
+    erpc_add_component("comp123", comp123_init);
+
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_component_init(config));
+}
+
+TEST_CASE("erpc test call function", "[erpc]")
+{
+    const char *config = "{"
+        "\"name\": \"inside\", "
+        "\"component\": \"comp123\", "
+        "\"params\": [\"119\"] }";
+
+    erpc_add_component("comp123", comp123_init);
+    erpc_add_function("comp123_work", comp123_work);
+
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_component_init(config));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_call("inside", "comp123_work"));
 }

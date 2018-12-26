@@ -34,11 +34,3 @@ TEST_CASE("Another test case which fails", "[mean][fails]")
     const int v1[] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
     TEST_ASSERT_EQUAL(INT_MAX, testable_mean(v1, countof(v1)));
 }
-
-TEST_CASE("JSON test case", "[jsmn]")
-{
-    static const char *JSON_STRING = "{\"type\": \"bme280\", \"params\": [119]}";  // 119 = 0x77
-
-    //const int v1[] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
-    TEST_ASSERT_EQUAL(0, json_parse_sense(JSON_STRING) );
-}

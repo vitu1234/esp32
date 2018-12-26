@@ -22,25 +22,11 @@
 #include "jsmn.h"
 #include "erpc.h"
 
-#define JSONRPC_METHOD_KEY "method"
-#define JSONRPC_PARAMS_KEY "params"
-#define JSONRPC_REPLY_TO_KEY "rto"
-#define JSONRPC_NULL "null"
+#define ERPC_COMPONENT_KEY "component"
+#define ERPC_NAME_KEY "name"
+#define ERPC_PARAMS_KEY "params"
+#define ERPC_NULL "null"
 
-/**
- * Globals
- */
-static unsigned char method[16] = {0};
-static unsigned char fncIdx = 0;
-JSMN_PARAMS_t params = {{0}};
-static unsigned char replyTo[32] = {0};
-static unsigned char paramNb = 0;
-
-/**
- * fncTable is an array of function pointers.
- * Function pointers are installed by the user.
- */
-int (*fncTable[FNC_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
 
 /**
  * Fowler/Noll/Vo (FNV) hash function, variant 1a
@@ -56,7 +42,7 @@ static size_t fnv1a_hash(const unsigned char* cp)
 }
 
 /**
- * Helper function to compare strings
+ * Helper function to compare strings (from jsmn)
  */
 static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
     if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
@@ -66,94 +52,151 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
     return -1;
 }
 
+
 /**
- * Parse JSON and call adequate function from lookup table
+ * comp_table is an array of function pointers which usually are init functions of components.
+ * Function pointers are defined by the user.
  */
-int erpc_call(const char* req)
+int (*comp_table[COMP_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
+
+
+/**
+ * inst_table is an array of pointers. Each pointer points to the result from calling the init
+ * function of a component.
+ */
+//int (*inst_table[INST_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
+void *inst_table[INST_TABLE_SIZE] = {NULL};
+
+
+/**
+ * func_table is an array of function pointers which usually are init functions of components.
+ * Function pointers are defined by the user.
+ */
+int (*func_table[FUNC_TABLE_SIZE])(void *) = {NULL};
+
+
+
+/**
+ * Add a component:
+ *Populate the comp_table by using epc_add_component to add all components.
+ *
+ * Erpc is platform agnostic - it knows only to parse JSON and call the init function of 
+ * a component with name `comp_idx` with the correct parameters. 
+ * The actual component functionality is defined with the components init function.
+ */
+void erpc_add_component(char* comp_name, void (*f)(int argc, JSMN_PARAMS_t argv))
+{
+    unsigned char comp_idx = fnv1a_hash((const unsigned char *)comp_name) % COMP_TABLE_SIZE;
+    comp_table[comp_idx] = f;
+}
+
+
+/**
+ * Add a function:
+ * Populate the func_table by using epc_add_function to add all functions.
+ *
+ * The actual component functionality is defined with the components functions.
+ */
+void erpc_add_function(char* func_name, void (*f)(void * inst))
+{
+    unsigned char func_idx = fnv1a_hash((const unsigned char *)func_name) % FUNC_TABLE_SIZE;
+    func_table[func_idx] = f;
+}
+
+
+/**
+ * Parse JSON and call adequate component init function from lookup table
+ * Store the result of the init function call in inst_table[<name>]
+ */
+int erpc_component_init(const char* config)
 {
     int i;
     int r;
     jsmn_parser p;
-    jsmntok_t t[128]; /* We expect no more than 128 tokens */
+    jsmntok_t t[128]; // We expect no more than 128 tokens
+    JSMN_PARAMS_t params = {{0}};
+    static unsigned char paramNb = 0;
+    static unsigned char name[16] = {0};
+    static unsigned char component[16] = {0};
+    static unsigned char method[16] = {0};
+    static unsigned char inst_idx = 0;
+    static unsigned char comp_idx = 0;
 
     jsmn_init(&p);
 
-    r = jsmn_parse(&p, req, strlen(req), t, sizeof(t)/sizeof(t[0]));
+    r = jsmn_parse(&p, config, strlen(config), t, sizeof(t)/sizeof(t[0]));
     if (r < 0) {
         printf("Failed to parse JSON: %d\n", r);
         return 1;
     }
 
-    /* Assume the top-level element is an object */
+    // Assume the top-level element is an object
     if (r < 1 || t[0].type != JSMN_OBJECT) {
         printf("Object expected\n");
         return 1;
     }
 
-    /* Loop over all keys of the root object */
+    // Loop over all keys of the root object
     for (i = 1; i < r; i++) {
-        if (jsoneq(req, &t[i], JSONRPC_METHOD_KEY) == 0) {
-
+        if (jsoneq(config, &t[i], ERPC_NAME_KEY) == 0) {
             int size = t[i+1].end-t[i+1].start;
         
-            /* We may use strndup() to fetch string value */
-            memcpy(method, req + t[i+1].start, t[i+1].end-t[i+1].start);
-            method[size] = '\0';
-            printf("- Method: %s\n", method);
+            // We may use strndup() to fetch string value
+            memcpy(name, config + t[i+1].start, t[i+1].end-t[i+1].start);
+            name[size] = '\0';
 
-            fncIdx = fnv1a_hash(method) % FNC_TABLE_SIZE;
-
-            printf("- Function Table Index: %d\n", fncIdx);
+            inst_idx = fnv1a_hash(name) % INST_TABLE_SIZE;
             i++;
-        } else if (jsoneq(req, &t[i], JSONRPC_PARAMS_KEY) == 0) {
+        } else if (jsoneq(config, &t[i], ERPC_COMPONENT_KEY) == 0) {
+            int size = t[i+1].end-t[i+1].start;
+        
+            // We may use strndup() to fetch string value
+            memcpy(component, config + t[i+1].start, t[i+1].end-t[i+1].start);
+            component[size] = '\0';
+
+            comp_idx = fnv1a_hash(component) % COMP_TABLE_SIZE;
+            i++;
+        } else if (jsoneq(config, &t[i], ERPC_PARAMS_KEY) == 0) {
             int j;
 
-            printf("- Params:\n");
-            /** Reset paramNb */
+            //printf("- Params:\n");
+            // Reset paramNb
             paramNb = 0;
 
             if (t[i+1].type != JSMN_ARRAY) {
-                continue; /* We expect params to be an array of strings */
+                continue; // We expect params to be an array of strings
             }
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
                 int paramSize = g->end - g->start;
-                memcpy(params[paramNb], req + g->start, paramSize);
+                memcpy(params[paramNb], config + g->start, paramSize);
                 params[paramNb][paramSize] = '\0';
 
-                printf("  * %s\n", params[paramNb]);
+                //printf("  * %s\n", params[paramNb]);
                 paramNb++;
             }
             i += t[i+1].size + 1;
-        } else if (jsoneq(req, &t[i], JSONRPC_REPLY_TO_KEY) == 0) {
-            int size = t[i+1].end-t[i+1].start;
-
-            /* We may want to do strtol() here to get numeric value */
-            memcpy(replyTo, req + t[i+1].start, size);
-            replyTo[size] = '\0';
-            printf("- replyTo: %s\n", replyTo);
-            i++;
         } else {
             printf("Unexpected key: %.*s\n", t[i].end-t[i].start,
-            req + t[i].start);
+            config + t[i].start);
         }
     }
 
-    /** Call the function */
-    return fncTable[fncIdx](paramNb, params);
+    // Call the components init function and store the response as instance in inst_table
+    inst_table[inst_idx] = comp_table[comp_idx](paramNb, params);
+    return EXIT_SUCCESS;
 }
 
+
 /**
- * Set function table:
- * user declares custom functions and stores them in the table
- * in his high level program, then tells erpc library to use these functions.
- *
- * Erpc is platform agnostic - it knows only to parse JSON and call
- * method with name `fncIdx` with correct parameters. What will this method
- * actually do, it is on user to define.
+ * call instance with adequate function from lookup tables
  */
-void erpc_add_function(char* fnc_name, void (*f)(int argc, JSMN_PARAMS_t argv))
+int erpc_call(const char* inst, const char* func)
 {
-    fncIdx = fnv1a_hash((const unsigned char *)fnc_name) % FNC_TABLE_SIZE;
-    fncTable[fncIdx] = f;
+    // lookup instance and function
+    unsigned char inst_idx = fnv1a_hash((const unsigned char *)inst) % INST_TABLE_SIZE;
+    unsigned char func_idx = fnv1a_hash((const unsigned char *)func) % FUNC_TABLE_SIZE;
+
+    // call function with instance
+    return func_table[func_idx](inst_table[inst_idx]);
 }

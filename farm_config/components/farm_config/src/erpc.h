@@ -19,9 +19,14 @@
 #ifndef ERPC_H
 #define ERPC_H
 
-#define FNC_TABLE_SIZE 1024
+#define FUNC_TABLE_SIZE 1024
+#define COMP_TABLE_SIZE 1024
+#define INST_TABLE_SIZE 1024
 typedef unsigned char JSMN_PARAMS_t[8][16];
-int erpc_call(const char* req);
-void erpc_add_function(char* fnc_name, void (*f)(int argc, JSMN_PARAMS_t argv));
+
+void erpc_add_component(char* cmp_name, void (*f)(int argc, JSMN_PARAMS_t argv));
+void erpc_add_function(char* func_name, void (*f)(void * inst));
+int erpc_component_init(const char* req);
+int erpc_call(const char* inst, const char* func);
 
 #endif /** ERPC_H */
