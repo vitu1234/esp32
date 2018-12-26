@@ -69,7 +69,7 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 /**
  * Parse JSON and call adequate function from lookup table
  */
-int erpcCall(const char* req)
+int erpc_call(const char* req)
 {
     int i;
     int r;
@@ -152,8 +152,8 @@ int erpcCall(const char* req)
  * method with name `fncIdx` with correct parameters. What will this method
  * actually do, it is on user to define.
  */
-void erpcAddFunction(char* fncName, void (*f)(int argc, JSMN_PARAMS_t argv))
+void erpc_add_function(char* fnc_name, void (*f)(int argc, JSMN_PARAMS_t argv))
 {
-    fncIdx = fnv1a_hash((const unsigned char *)fncName) % FNC_TABLE_SIZE;
+    fncIdx = fnv1a_hash((const unsigned char *)fnc_name) % FNC_TABLE_SIZE;
     fncTable[fncIdx] = f;
 }

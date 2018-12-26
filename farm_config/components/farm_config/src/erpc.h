@@ -21,7 +21,7 @@
 
 #define FNC_TABLE_SIZE 1024
 typedef unsigned char JSMN_PARAMS_t[8][16];
-int erpcCall(const char* req);
-void erpcAddFunction(char* fncName, void (*f)(int argc, JSMN_PARAMS_t argv));
+int erpc_call(const char* req);
+void erpc_add_function(char* fnc_name, void (*f)(int argc, JSMN_PARAMS_t argv));
 
 #endif /** ERPC_H */

@@ -27,11 +27,11 @@
 
 
 const char *req =
-	"{\"method\": \"digitalWrite\", "
+	"{\"method\": \"digital_write\", "
 	"\"params\": [\"users\", \"wheel\", \"audio\", \"video\"], \"rto\": \"/user/1234/out\"}";
 
 
-int digitalWrite(int argc, JSMN_PARAMS_t argv)
+int digital_write(int argc, JSMN_PARAMS_t argv)
 {
     uint8_t i = 0;
     JSMN_PARAMS_t params = {{0}};
@@ -46,7 +46,7 @@ int digitalWrite(int argc, JSMN_PARAMS_t argv)
     return EXIT_SUCCESS;
 }
 
-int digitalRead(int argc, JSMN_PARAMS_t argv)
+int digital_read(int argc, JSMN_PARAMS_t argv)
 {
     // just to illustrate having multiple functions
     return EXIT_SUCCESS;
@@ -56,8 +56,8 @@ TEST_CASE("erpc test case", "[erpc]")
 {
     static const char *JSON_STRING = "{\"type\": \"bme280\", \"params\": [119]}";  // 119 = 0x77
 
-    erpcAddFunction("digitalWrite", digitalWrite);
-    erpcAddFunction("digitalRead", digitalRead);
+    erpc_add_function("digital_write", digital_write);
+    erpc_add_function("digital_read", digital_read);
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpcCall(req) );
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_call(req) );
 }
