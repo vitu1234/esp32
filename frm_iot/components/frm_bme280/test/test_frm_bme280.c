@@ -28,17 +28,16 @@
 
 TEST_CASE("test frm_bme280_sprintf", "[frm_bme280]")
 {
-    struct bme280_data comp_data;
-    comp_data = {
-        .temperature = 100;
-        .pressure = 20000;
-        .humidity = 300;
+    struct bme280_data comp_data = {
+        .temperature = 100.0,
+        .pressure = 20000.0,
+        .humidity = 300.0,
     };
     frm_bme280_type device;
-    device.name = "stable\0";
-    device.data = comp_data;
+    strcpy(device.name , "sensor1\0");
+    device.data = &comp_data;
     char payload[100];
 
     frm_bme280_sprintf(&device, payload);
-    TEST_ASSERT_EQUAL_STRING("sla\n", payload);
+    TEST_ASSERT_EQUAL_STRING("sensor1,temperature,100.00\nsensor1,pressure,200.00\nsensor1,humidity,300.00\n", payload);
 }

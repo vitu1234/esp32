@@ -4,4 +4,6 @@ set(COMPONENT_PRIV_INCLUDEDIRS "../driver/")
 
 set(COMPONENT_REQUIRES unity frm_config frm_bme280)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DBME280_FLOAT_ENABLE")
+
 register_component()
