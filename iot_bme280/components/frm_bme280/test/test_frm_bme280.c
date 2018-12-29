@@ -16,17 +16,29 @@
  * limitations under the License.
  */
 
-#ifndef ERPC_H
-#define ERPC_H
+#include <limits.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
-#define FUNC_TABLE_SIZE 1024
-#define COMP_TABLE_SIZE 1024
-#define INST_TABLE_SIZE 1024
-typedef unsigned char JSMN_PARAMS_t[8][16];
+#include "unity.h"
+#include "frm_bme280_sensor.h"
 
-void erpc_add_component(char* cmp_name, void (*f)(int argc, JSMN_PARAMS_t argv));
-void erpc_add_function(char* func_name, void (*f)(void * inst));
-int erpc_component_init(const char* req);
-int erpc_call(const char* inst, const char* func);
 
-#endif /** ERPC_H */
+TEST_CASE("test frm_bme280_sprintf", "[frm_bme280]")
+{
+    struct bme280_data comp_data;
+    comp_data = {
+        .temperature = 100;
+        .pressure = 20000;
+        .humidity = 300;
+    };
+    frm_bme280_type device;
+    device.name = "stable\0";
+    device.data = comp_data;
+    char payload[100];
+
+    frm_bme280_sprintf(&device, payload);
+    TEST_ASSERT_EQUAL_STRING("sla\n", payload);
+}

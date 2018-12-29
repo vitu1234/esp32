@@ -20,7 +20,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include "jsmn.h"
-#include "erpc.h"
+#include "frm_config.h"
+
+#define FUNC_TABLE_SIZE 1024
+#define COMP_TABLE_SIZE 1024
+#define INST_TABLE_SIZE 1024
 
 #define ERPC_COMPONENT_KEY "component"
 #define ERPC_NAME_KEY "name"
@@ -57,14 +61,13 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
  * comp_table is an array of function pointers which usually are init functions of components.
  * Function pointers are defined by the user.
  */
-int (*comp_table[COMP_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
+int (*comp_table[COMP_TABLE_SIZE])(int argc, frm_params_type argv) = {NULL};
 
 
 /**
  * inst_table is an array of pointers. Each pointer points to the result from calling the init
  * function of a component.
  */
-//int (*inst_table[INST_TABLE_SIZE])(int argc, JSMN_PARAMS_t argv) = {NULL};
 void *inst_table[INST_TABLE_SIZE] = {NULL};
 
 
@@ -84,7 +87,7 @@ int (*func_table[FUNC_TABLE_SIZE])(void *) = {NULL};
  * a component with name `comp_idx` with the correct parameters. 
  * The actual component functionality is defined with the components init function.
  */
-void erpc_add_component(char* comp_name, void (*f)(int argc, JSMN_PARAMS_t argv))
+void frm_config_add_component(char* comp_name, void (*f)(int argc, frm_params_type argv))
 {
     unsigned char comp_idx = fnv1a_hash((const unsigned char *)comp_name) % COMP_TABLE_SIZE;
     comp_table[comp_idx] = f;
@@ -97,7 +100,7 @@ void erpc_add_component(char* comp_name, void (*f)(int argc, JSMN_PARAMS_t argv)
  *
  * The actual component functionality is defined with the components functions.
  */
-void erpc_add_function(char* func_name, void (*f)(void * inst))
+void frm_config_add_function(char* func_name, void (*f)(void * inst))
 {
     unsigned char func_idx = fnv1a_hash((const unsigned char *)func_name) % FUNC_TABLE_SIZE;
     func_table[func_idx] = f;
@@ -108,15 +111,15 @@ void erpc_add_function(char* func_name, void (*f)(void * inst))
  * Parse JSON and call adequate component init function from lookup table
  * Store the result of the init function call in inst_table[<name>]
  */
-int erpc_component_init(const char* config)
+int frm_config_component_init(const char* config)
 {
     int i;
     int r;
     jsmn_parser p;
     jsmntok_t t[128]; // We expect no more than 128 tokens
-    JSMN_PARAMS_t params = {{0}};
+    frm_params_type params = {{0}};
     static unsigned char paramNb = 0;
-    static unsigned char name[16] = {0};
+    //static unsigned char name[16] = {0};
     static unsigned char component[16] = {0};
     static unsigned char method[16] = {0};
     static unsigned char inst_idx = 0;
@@ -142,10 +145,10 @@ int erpc_component_init(const char* config)
             int size = t[i+1].end-t[i+1].start;
         
             // We may use strndup() to fetch string value
-            memcpy(name, config + t[i+1].start, t[i+1].end-t[i+1].start);
-            name[size] = '\0';
+            memcpy(params[0], config + t[i+1].start, t[i+1].end-t[i+1].start);
+            params[0][size] = '\0';
 
-            inst_idx = fnv1a_hash(name) % INST_TABLE_SIZE;
+            inst_idx = fnv1a_hash(params[0]) % INST_TABLE_SIZE;
             i++;
         } else if (jsoneq(config, &t[i], ERPC_COMPONENT_KEY) == 0) {
             int size = t[i+1].end-t[i+1].start;
@@ -159,9 +162,9 @@ int erpc_component_init(const char* config)
         } else if (jsoneq(config, &t[i], ERPC_PARAMS_KEY) == 0) {
             int j;
 
-            //printf("- Params:\n");
+            printf("- Params:\n");
             // Reset paramNb
-            paramNb = 0;
+            paramNb = 1;  // name is 1st parameter
 
             if (t[i+1].type != JSMN_ARRAY) {
                 continue; // We expect params to be an array of strings
@@ -172,7 +175,7 @@ int erpc_component_init(const char* config)
                 memcpy(params[paramNb], config + g->start, paramSize);
                 params[paramNb][paramSize] = '\0';
 
-                //printf("  * %s\n", params[paramNb]);
+                printf("  * %s\n", params[paramNb]);
                 paramNb++;
             }
             i += t[i+1].size + 1;
@@ -183,6 +186,7 @@ int erpc_component_init(const char* config)
     }
 
     // Call the components init function and store the response as instance in inst_table
+    //voiddevice = 
     inst_table[inst_idx] = comp_table[comp_idx](paramNb, params);
     return EXIT_SUCCESS;
 }
@@ -191,7 +195,7 @@ int erpc_component_init(const char* config)
 /**
  * call instance with adequate function from lookup tables
  */
-int erpc_call(const char* inst, const char* func)
+int frm_config_call(const char* inst, const char* func)
 {
     // lookup instance and function
     unsigned char inst_idx = fnv1a_hash((const unsigned char *)inst) % INST_TABLE_SIZE;

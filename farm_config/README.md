@@ -1,4 +1,4 @@
-# Farm components
+# frm components
 
 # project layout
 
@@ -7,7 +7,7 @@ we follow the normal ESP-IDF layout
 ```
 unit_test                      — Application project directory
   - components                 — Components of the application project
-    + farm_config
+    + frm_config
   + main                       - Main source files of the application project
   + test                       — Test project directory
   Makefile / CMakeLists.txt    - Makefiles of the application project

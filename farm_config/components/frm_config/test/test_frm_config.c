@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "erpc.h"
+#include "frm_config.h"
 #include "unity.h"
 
 
@@ -30,14 +30,15 @@ typedef struct {
     int value
 } demo_t;
 
-int comp123_init(int argc, JSMN_PARAMS_t argv)
+int comp123_init(int argc, frm_params_type argv)
 {
     // demo component init use
-    JSMN_PARAMS_t params = {{0}};
-    JSMN_PARAMS_t expected_params = {"119"};
+    frm_params_type params = {{0}};
+    frm_params_type expected_params = {"inside", "119"};
 
-    memcpy(params, argv, sizeof(JSMN_PARAMS_t));
+    memcpy(params, argv, sizeof(frm_params_type));
     TEST_ASSERT_EQUAL_STRING(expected_params[0], argv[0]);
+    TEST_ASSERT_EQUAL_STRING(expected_params[1], argv[1]);
 
     demo_t *s1 = malloc(sizeof(demo_t));
     s1->value = 42;
@@ -52,17 +53,17 @@ int comp123_work(demo_t *inst)
     return EXIT_SUCCESS;
 }
 
-TEST_CASE("erpc test add component", "[erpc]")
+TEST_CASE("test frm_config add component", "[frm_config]")
 {
-    erpc_add_component("comp123", comp123_init);
+    frm_config_add_component("comp123", comp123_init);
 }
 
-TEST_CASE("erpc test add function", "[erpc]")
+TEST_CASE("test frm_config add function", "[frm_config]")
 {
-    erpc_add_function("comp123_do_work", comp123_work);
+    frm_config_add_function("comp123_do_work", comp123_work);
 }
 
-TEST_CASE("erpc test comp123_work", "[erpc]")
+TEST_CASE("test frm_config comp123_work", "[frm_config]")
 {
     demo_t s1;
     s1.value = 42;
@@ -70,28 +71,28 @@ TEST_CASE("erpc test comp123_work", "[erpc]")
     TEST_ASSERT_EQUAL(EXIT_SUCCESS, comp123_work(&s1));
 }
 
-TEST_CASE("erpc test init component", "[erpc]")
+TEST_CASE("test frm_config init component", "[frm_config]")
 {
     const char *config = "{"
         "\"name\": \"inside\", "
         "\"component\": \"comp123\", "
         "\"params\": [\"119\"] }";
 
-    erpc_add_component("comp123", comp123_init);
+    frm_config_add_component("comp123", comp123_init);
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_component_init(config));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config));
 }
 
-TEST_CASE("erpc test call function", "[erpc]")
+TEST_CASE("test frm_config call", "[frm_config]")
 {
     const char *config = "{"
         "\"name\": \"inside\", "
         "\"component\": \"comp123\", "
         "\"params\": [\"119\"] }";
 
-    erpc_add_component("comp123", comp123_init);
-    erpc_add_function("comp123_work", comp123_work);
+    frm_config_add_component("comp123", comp123_init);
+    frm_config_add_function("comp123_work", comp123_work);
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_component_init(config));
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, erpc_call("inside", "comp123_work"));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_call("inside", "comp123_work"));
 }

@@ -1,4 +1,4 @@
-# farm_config component
+# frm_config component
 
 # goal & features
 
@@ -28,7 +28,7 @@ Jasmin is a great name for a json parser. I did not know [jsmn](https://github.c
 
 ## erpc
 
-The farm_config component code is based on [erpc: abb6e5e](https://github.com/projectiota/erpc/commit/abb6e5e63ea728aab49372448295273c710717a9). erpc tremendously helped to quickstart the development of this component. Big thank you to [Drasko Draskovic](https://github.com/drasko) for developing and open sourcing the code.
+The frm_config component code is based on [erpc: abb6e5e](https://github.com/projectiota/erpc/commit/abb6e5e63ea728aab49372448295273c710717a9). erpc tremendously helped to quickstart the development of this component. Big thank you to [Drasko Draskovic](https://github.com/drasko) for developing and open sourcing the code.
 
 
 # resources
