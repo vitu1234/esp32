@@ -4,15 +4,23 @@ function(create_mock mock_name header_abs_path)
   add_custom_command (
     OUTPUT ${header_folder}/mocks/${mock_name}.c
     COMMAND ruby
-            ${CMAKE_SOURCE_DIR}/vendor/cmock/lib/cmock.rb
-            -o${CMAKE_SOURCE_DIR}/cmake_common/project.yml
+            ${CMAKE_SOURCE_DIR}/../components/cmock/lib/cmock.rb
+            --mock_prefix=mock_
             ${header_abs_path}
     WORKING_DIRECTORY ${header_folder}
     DEPENDS ${header_abs_path})
   
-  add_library(${mock_name} ${header_folder}/mocks/${mock_name}.c)
-  target_include_directories(${mock_name} PUBLIC  ${header_folder})
-  target_include_directories(${mock_name} PUBLIC  ${header_folder}/mocks)
-  target_link_libraries(${mock_name} unity)
-  target_link_libraries(${mock_name} cmock)
+  # create mock dependency
+  #add_custom_target(${mock_name} DEPENDS ${header_abs_path})
+  #add_dependencies(${COMPONENT_TARGET} ${mock_name})
+
+  # add mock source
+  # TODO regretably this does not work :(
+  list(APPEND COMPONENT_SRCS "../include/mocks/mock_dep_demo.c")
+
+  # add to cleanup path!
+  set_property(DIRECTORY "${COMPONENT_PATH}" APPEND PROPERTY
+    ADDITIONAL_MAKE_CLEAN_FILES 
+    ${header_folder}/mocks/${mock_name}.h 
+    ${header_folder}/mocks/${mock_name}.c)
 endfunction()

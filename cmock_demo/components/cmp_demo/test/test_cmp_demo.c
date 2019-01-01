@@ -4,7 +4,7 @@
 #include "unity.h"
 #include "cmp_demo.h"
 
-#include "mock_dep_demo.h"
+#include "mocks/mock_dep_demo.h"
 
 TEST_CASE("test cmp_demo init", "[demo]")
 {

@@ -9,3 +9,4 @@ sdkconfig.*
 build/
 research/
 cheat_sheet.txt
+mocks/
