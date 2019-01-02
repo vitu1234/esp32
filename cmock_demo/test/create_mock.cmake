@@ -15,7 +15,7 @@ function(create_mock mock_name header_abs_path)
   #add_dependencies(${COMPONENT_TARGET} ${mock_name})
 
   # add mock source
-  target_sources(${COMPONENT_TARGET} PRIVATE "../include/mocks/mock_dep_demo.c")
+  target_sources(${COMPONENT_TARGET} PRIVATE ${header_folder}/mocks/${mock_name}.c)
 
   # add to cleanup path!
   set_property(DIRECTORY "${COMPONENT_PATH}" APPEND PROPERTY
