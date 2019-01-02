@@ -15,8 +15,7 @@ function(create_mock mock_name header_abs_path)
   #add_dependencies(${COMPONENT_TARGET} ${mock_name})
 
   # add mock source
-  # TODO regretably this does not work :(
-  list(APPEND COMPONENT_SRCS "../include/mocks/mock_dep_demo.c")
+  target_sources(${COMPONENT_TARGET} PRIVATE "../include/mocks/mock_dep_demo.c")
 
   # add to cleanup path!
   set_property(DIRECTORY "${COMPONENT_PATH}" APPEND PROPERTY
