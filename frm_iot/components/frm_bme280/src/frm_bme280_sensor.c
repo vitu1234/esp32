@@ -180,7 +180,7 @@ int frm_bme280_init(int argc, frm_params_type argv)
 
     i2c_master_init(I2C_EXAMPLE_MASTER_SDA_IO, I2C_EXAMPLE_MASTER_SCL_IO);
 
-    // bme280 initialization and settings
+    // fill in bme280_dev structure
     device->dev->dev_id = address;
     device->dev->intf = BME280_I2C_INTF;
     device->dev->read = user_i2c_read;
@@ -192,34 +192,20 @@ int frm_bme280_init(int argc, frm_params_type argv)
     device->dev->settings.osr_t = BME280_OVERSAMPLING_4X;
     device->dev->settings.filter = BME280_FILTER_COEFF_2;
 
-    //struct bme280_dev dev2 = dev1;
-    //dev2.dev_id = BME280_I2C_ADDR_SEC;  // sensor2
-
-    //ESP_LOGI(TAG, "AWS IoT SDK Version %d.%d.%d-%s", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG);
-
     ESP_LOGI(TAG, "BME-280 '%s' initialization", device->name);
     rslt = bme280_init(device->dev);
     if(rslt != 0) {
-        ESP_LOGE(TAG, "BME-280 '%s' init or setting error. code: %d", device->name, rslt);
+        ESP_LOGE(TAG, "BME-280 '%s' initialization error. code: %d", device->name, rslt);
         abort();
     };
-    //rslt = bme280_init(&dev2);
-    //if(rslt != SUCCESS) {
-    //    ESP_LOGE(TAG, "BME-280 sensor2 init or setting error. code: %d", rslt);
-    //    abort();
-    //}
 
-    //ESP_LOGI(TAG, "BME-280 settings");
+    ESP_LOGI(TAG, "BME-280 '%s' settings", device->name);
     settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
     rslt = bme280_set_sensor_settings(settings_sel, device->dev);
     if(rslt != 0) {
         ESP_LOGE(TAG, "BME-280 '%s' setting error. code: %d", device->name, rslt);
         abort();
     };
-    //rslt = bme280_set_sensor_settings(settings_sel, &dev2);
-    //if(rslt != SUCCESS) {
-    //    ESP_LOGE(TAG, "BME-280 sensor2 setting error. code: %d", rslt);
-    //    abort();
-    //}
+
     return device;
 };

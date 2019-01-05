@@ -236,6 +236,13 @@ void aws_iot_task(void *param) {
 
     ESP_LOGI(TAG, "AWS IoT SDK Version %d.%d.%d-%s", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_TAG);
 
+    const char *config = "{"
+        "\"name\": \"inside\", "
+        "\"component\": \"comp123\", "
+        "\"params\": [\"119\"] }";
+
+
+
     //uint8_t settings_sel;
     //struct bme280_data comp_data;
 

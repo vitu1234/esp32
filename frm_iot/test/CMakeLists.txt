@@ -13,4 +13,5 @@ set(EXTRA_COMPONENT_DIRS "../components")
 set(TEST_COMPONENTS "frm_config" "frm_bme280" CACHE STRING "List of components to test")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+include(create_mock.cmake)
 project(frm_iot)
