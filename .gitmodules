@@ -1,5 +1,5 @@
-[submodule "frm_iot/components/bme280/driver"]
-	path = frm_iot/components/bme280/driver
+[submodule "frm_iot/components/frm_bme280/driver"]
+	path = frm_iot/components/frm_bme280/driver
 	url = https://github.com/BoschSensortec/BME280_driver.git
 [submodule "iot_bme280_relais/components/bme280/driver"]
 	path = iot_bme280_relais/components/bme280/driver

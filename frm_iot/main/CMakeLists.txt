@@ -1,4 +1,4 @@
-set(COMPONENT_SRCS "test_app.c")
+set(COMPONENT_SRCS "example_unit_test_main.c")
 set(COMPONENT_ADD_INCLUDEDIRS ".")
 
 register_component()

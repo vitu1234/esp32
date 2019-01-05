@@ -1,11 +1,8 @@
 #
-# This is a project Makefile. It is assumed the directory this Makefile resides in is a
-# project subdirectory.
+# This is a project Makefile for the example project.
+# See 'test' subdirectory for the test subproject.
 #
 
-PROJECT_VERSION := 0.0.4
-
-PROJECT_NAME := iot_bme280_$(PROJECT_VERSION)
+PROJECT_NAME := cmock_demo
 
 include $(IDF_PATH)/make/project.mk
-

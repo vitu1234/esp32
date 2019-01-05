@@ -19,11 +19,14 @@
  * @file bme280_sensor.h
  * @brief bme280 sensor component
  */
-#include "frm_config.h"
+//#include "frm_config.h"
 #include "bme280_defs.h"
 
 #ifndef FRM_BME280_SENSOR_H
 #define FRM_BME280_SENSOR_H
+
+// frm_commons
+typedef unsigned char frm_params_type[8][16];
 
 
 /*!
@@ -32,8 +35,8 @@
  */
 typedef struct {
     char name[16];
-    struct bme280_dev *dev;
-    struct bme280_data *data;
+    struct bme280_dev dev;
+    struct bme280_data data;
 } frm_bme280_type;
 
 
@@ -43,9 +46,15 @@ typedef struct {
  * @param argc - arg count.
  * @param argv - arg values: first argv value is the device name.
  *
- * @return FRM_BME280_t.
+ * @return frm_bme280_type*.
  */
-int frm_bme280_init(int argc, frm_params_type argv);
+frm_bme280_type* frm_bme280_init(int argc, frm_params_type argv);
+
+
+/*!
+ * @brief Destroy device instance.
+ */
+void frm_bme280_destroy(const frm_bme280_type *device);
 
 /*!
  * @brief Update task typically comprises of reading values from the device and storing them in FRM_DME280_t.

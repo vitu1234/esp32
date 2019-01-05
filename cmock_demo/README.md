@@ -22,7 +22,7 @@ $ ruby /home/mark/devel/10_esp32/esp32/cmock_demo/tools/cmock/lib/cmock.rb inclu
 
 # cmock.rb mock_prefix option (mock_)
 
-$ ruby /home/mark/devel/10_esp32/esp32/cmock_demo/tools/cmock/lib/cmock.rb --mock_prefix=mock_ include/dep_demo.h
+$ ruby /home/mark/devel/10_esp32/esp32/cmock_demo/components/cmock/lib/cmock.rb --mock_prefix=mock_ include/dep_demo.h
 
 
 # resources

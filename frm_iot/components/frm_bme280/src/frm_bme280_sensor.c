@@ -22,7 +22,7 @@
 
 #include "bme280.h"
 #include "bme280_defs.h"
-#include "frm_config.h"
+//#include "frm_config.h"
 #include "frm_bme280_sensor.h"
 
 #include "esp_log.h"
@@ -60,9 +60,9 @@ void i2c_master_init(gpio_num_t sda_io_pin, gpio_num_t scl_io_pin) {
 
 void frm_bme280_update(const frm_bme280_type *device)
 {
-    bme280_set_sensor_mode(BME280_FORCED_MODE, device->dev);
-    device->dev->delay_ms(40);  // Wait for the measurement to complete and print data
-    bme280_get_sensor_data(BME280_ALL, device->data, device->dev);
+    bme280_set_sensor_mode(BME280_FORCED_MODE, &device->dev);
+    device->dev.delay_ms(40);  // Wait for the measurement to complete and print data
+    bme280_get_sensor_data(BME280_ALL, &device->data, &device->dev);
 };
 
 
@@ -73,28 +73,28 @@ void frm_bme280_sprintf(const frm_bme280_type *device, char* payload)
         "%s,temperature,%0.2f\n"
         "%s,pressure,%0.2f\n"
         "%s,humidity,%0.2f\n",
-        device->name, device->data->temperature, 
-        device->name, device->data->pressure / 100.0, 
-        device->name, device->data->humidity
+        device->name, device->data.temperature, 
+        device->name, device->data.pressure / 100.0, 
+        device->name, device->data.humidity
     );
 };
 
 
 double frm_bme280_get_temperature(const frm_bme280_type *device)
 {
-    return device->data->temperature;
+    return device->data.temperature;
 };
 
 
 double frm_bme280_get_pressure(const frm_bme280_type *device)
 {
-    return device->data->pressure / 100.0;
+    return device->data.pressure / 100.0;
 };
 
 
 double frm_bme280_get_humidity(const frm_bme280_type *device)
 {
-    return device->data->humidity;
+    return device->data.humidity;
 };
 
 
@@ -164,13 +164,38 @@ void user_delay_ms(uint32_t period) {
 }
 
 
-int frm_bme280_init(int argc, frm_params_type argv)
+// https://embeddedartistry.com/blog/2018/1/15/implementing-malloc-with-freertos
+int frm_malloc(size_t size)
+{
+    void* ptr = NULL;
+
+    if(size > 0)
+    {
+        // We simply wrap the FreeRTOS call into a standard form
+        ptr = pvPortMalloc(size);
+    } // else NULL if there was an error
+
+    return ptr;
+}
+
+// https://embeddedartistry.com/blog/2018/1/15/implementing-malloc-with-freertos
+void frm_free(void* ptr)
+{
+    if(ptr)
+    {
+        // We simply wrap the FreeRTOS call into a standard form
+        vPortFree(ptr);
+    }
+}
+
+
+frm_bme280_type* frm_bme280_init(int argc, frm_params_type argv)
 {
     int8_t rslt;
     int8_t address;
     uint8_t settings_sel;
     frm_params_type params = {{0}};  // we do not need this one!
-    frm_bme280_type *device = malloc(sizeof(frm_bme280_type));
+    frm_bme280_type *device = frm_malloc(sizeof(frm_bme280_type));
 
     assert(argc == 2);
     memcpy(params, argv, sizeof(frm_params_type));
@@ -181,19 +206,19 @@ int frm_bme280_init(int argc, frm_params_type argv)
     i2c_master_init(I2C_EXAMPLE_MASTER_SDA_IO, I2C_EXAMPLE_MASTER_SCL_IO);
 
     // fill in bme280_dev structure
-    device->dev->dev_id = address;
-    device->dev->intf = BME280_I2C_INTF;
-    device->dev->read = user_i2c_read;
-    device->dev->write = user_i2c_write;
-    device->dev->delay_ms = user_delay_ms;
+    device->dev.dev_id = address;
+    device->dev.intf = BME280_I2C_INTF;
+    device->dev.read = user_i2c_read;
+    device->dev.write = user_i2c_write;
+    device->dev.delay_ms = user_delay_ms;
     // mode of operation for weather data
-    device->dev->settings.osr_h = BME280_OVERSAMPLING_2X;
-    device->dev->settings.osr_p = BME280_OVERSAMPLING_4X;
-    device->dev->settings.osr_t = BME280_OVERSAMPLING_4X;
-    device->dev->settings.filter = BME280_FILTER_COEFF_2;
+    device->dev.settings.osr_h = BME280_OVERSAMPLING_2X;
+    device->dev.settings.osr_p = BME280_OVERSAMPLING_4X;
+    device->dev.settings.osr_t = BME280_OVERSAMPLING_4X;
+    device->dev.settings.filter = BME280_FILTER_COEFF_2;
 
     ESP_LOGI(TAG, "BME-280 '%s' initialization", device->name);
-    rslt = bme280_init(device->dev);
+    rslt = bme280_init(&device->dev);
     if(rslt != 0) {
         ESP_LOGE(TAG, "BME-280 '%s' initialization error. code: %d", device->name, rslt);
         abort();
@@ -201,7 +226,7 @@ int frm_bme280_init(int argc, frm_params_type argv)
 
     ESP_LOGI(TAG, "BME-280 '%s' settings", device->name);
     settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
-    rslt = bme280_set_sensor_settings(settings_sel, device->dev);
+    rslt = bme280_set_sensor_settings(settings_sel, &device->dev);
     if(rslt != 0) {
         ESP_LOGE(TAG, "BME-280 '%s' setting error. code: %d", device->name, rslt);
         abort();
@@ -209,3 +234,9 @@ int frm_bme280_init(int argc, frm_params_type argv)
 
     return device;
 };
+
+
+void frm_bme280_destroy(const frm_bme280_type *device)
+{
+    frm_free(device);
+}
