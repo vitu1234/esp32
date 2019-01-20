@@ -262,5 +262,5 @@ TEST_CASE("jsmn demo split parser into smaller parts test", "[jsmn]")
 		}
 	}
 
-    TEST_ASSERT_EQUAL_INT(i, 21);
+    TEST_ASSERT_EQUAL_INT(21, i);
 }

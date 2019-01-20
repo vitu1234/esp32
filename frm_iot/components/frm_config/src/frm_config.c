@@ -111,83 +111,81 @@ void frm_config_add_function(char* func_name, void (*f)(void * inst))
  * Parse JSON and call adequate component init function from lookup table
  * Store the result of the init function call in inst_table[<name>]
  */
-int frm_config_component_init(const char* config)
+
+/// parse sense object and return sense instance
+///
+/// @param config (char*) - config to read the values
+/// @param i (int*) - number of tokens that already have been parsed
+/// @param tokens (jsmntok_t*) - tokens parsed by jsmn
+/// @return EXIT_SUCCESS / EXIT_FAILURE
+int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens)
 {
-    int i;
-    int r;
-    jsmn_parser p;
-    jsmntok_t t[128]; // We expect no more than 128 tokens
     frm_params_type params = {{0}};
-    static unsigned char paramNb = 0;
-    //static unsigned char name[16] = {0};
+    static unsigned char params_id = 0;
     static unsigned char component[16] = {0};
     static unsigned char method[16] = {0};
     static unsigned char inst_idx = 0;
     static unsigned char comp_idx = 0;
 
-    jsmn_init(&p);
-
-    r = jsmn_parse(&p, config, strlen(config), t, sizeof(t)/sizeof(t[0]));
-    if (r < 0) {
-        printf("Failed to parse JSON: %d\n", r);
-        return 1;
-    }
-
-    // Assume the top-level element is an object
-    if (r < 1 || t[0].type != JSMN_OBJECT) {
-        printf("Object expected\n");
-        return 1;
-    }
-
-    // Loop over all keys of the root object
-    for (i = 1; i < r; i++) {
-        if (jsoneq(config, &t[i], ERPC_NAME_KEY) == 0) {
-            int size = t[i+1].end-t[i+1].start;
-        
+  // assert token is an object
+  if (tokens[(*i)].type != JSMN_OBJECT)
+  {
+    printf("Object expected\n");
+    return EXIT_FAILURE;
+  }
+  int object_size = tokens[(*i)].size;
+  (*i)++;  // processed object token
+  for (int k = 0; k < object_size; k++)  // loop over objects key-value pairs
+    {
+        if (jsoneq(config, &tokens[(*i)], ERPC_NAME_KEY) == 0) 
+        {
+            (*i)++;  // processed key token
+            int size = tokens[(*i)].end-tokens[(*i)].start;
             // We may use strndup() to fetch string value
-            memcpy(params[0], config + t[i+1].start, t[i+1].end-t[i+1].start);
+            memcpy(params[0], config + tokens[(*i)].start, size);
             params[0][size] = '\0';
 
             inst_idx = fnv1a_hash(params[0]) % INST_TABLE_SIZE;
-            i++;
-        } else if (jsoneq(config, &t[i], ERPC_COMPONENT_KEY) == 0) {
-            int size = t[i+1].end-t[i+1].start;
-        
+            (*i)++;
+        }
+        else if (jsoneq(config, &tokens[(*i)], ERPC_COMPONENT_KEY) == 0)
+        {
+            (*i)++;  // processed key token
+            int size = tokens[(*i)].end-tokens[(*i)].start;
             // We may use strndup() to fetch string value
-            memcpy(component, config + t[i+1].start, t[i+1].end-t[i+1].start);
+            memcpy(component, config + tokens[(*i)].start, size);
             component[size] = '\0';
 
             comp_idx = fnv1a_hash(component) % COMP_TABLE_SIZE;
-            i++;
-        } else if (jsoneq(config, &t[i], ERPC_PARAMS_KEY) == 0) {
-            int j;
-
-            //printf("- Params:\n");
-            // Reset paramNb
-            paramNb = 1;  // name is 1st parameter
-
-            if (t[i+1].type != JSMN_ARRAY) {
-                continue; // We expect params to be an array of strings
+            (*i)++;
+        } 
+        else if (jsoneq(config, &tokens[(*i)], ERPC_PARAMS_KEY) == 0)
+        {
+            (*i)++;  // processed key token
+            if (tokens[(*i)].type != JSMN_ARRAY)
+            {
+                printf("    Params array expected\n");
+                return EXIT_FAILURE;
             }
-            for (j = 0; j < t[i+1].size; j++) {
-                jsmntok_t *g = &t[i+j+2];
-                int paramSize = g->end - g->start;
-                memcpy(params[paramNb], config + g->start, paramSize);
-                params[paramNb][paramSize] = '\0';
-
-                //printf("  * %s\n", params[paramNb]);
-                paramNb++;
+            int array_size = tokens[(*i)].size;
+            (*i)++;  // processed array token
+            for (params_id = 1; params_id <= array_size; params_id++)  // start at 1 ("name" is 1st params entry)
+            {
+                int size = tokens[(*i)].end - tokens[(*i)].start;
+                memcpy(params[params_id], config + tokens[(*i)].start, size);
+                params[params_id][size] = '\0';
+                (*i)++;  // processed params value
             }
-            i += t[i+1].size + 1;
-        } else {
-            printf("Unexpected key: %.*s\n", t[i].end-t[i].start,
-            config + t[i].start);
+        }
+        else 
+        {
+            printf("Unexpected key: %.*s\n", tokens[(*i)].end-tokens[(*i)].start,
+                config + tokens[(*i)].start);
         }
     }
 
     // Call the components init function and store the response as instance in inst_table
-    //voiddevice = 
-    inst_table[inst_idx] = comp_table[comp_idx](paramNb, params);
+    inst_table[inst_idx] = comp_table[comp_idx](params_id, params);
     return EXIT_SUCCESS;
 }
 

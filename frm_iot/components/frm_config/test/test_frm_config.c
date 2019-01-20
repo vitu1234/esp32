@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "frm_config.h"
+#include "jsmn.h"
 #include "unity.h"
 
 
@@ -78,9 +79,45 @@ TEST_CASE("test frm_config init component", "[frm_config]")
         "\"component\": \"comp123\", "
         "\"params\": [\"119\"] }";
 
+    int i = 0;
+	int r;
+	jsmn_parser p;
+	jsmntok_t tokens[128]; /* We expect no more than 128 tokens */
+
+    // parsed the string into tokens using jsmn
+	jsmn_init(&p);
+	r = jsmn_parse(&p, config, strlen(config), tokens, sizeof(tokens)/sizeof(tokens[0]));
+	if (r < 0)
+    {
+		printf("Failed to parse JSON: %d\n", r);
+        TEST_FAIL();
+	}
+
+	// in order to gain a deeper understanding it is important
+	// to understand what a token is!!
+	// => a token is
+    //   * a struct containing a type and
+    //   * number of child-nodes (JSMN_OBJECT, JSMN_ARRAY)
+    //   * or start and end (JSMN_STRING)
+    // print token types and sizes of tokens information
+    //static char* token_types[] = { "JSMN_UNDEFINED", "JSMN_OBJECT", "JSMN_ARRAY", "JSMN_STRING", "JSMN_PRIMITIVE" };
+    //for(uint x=0; x < r; x++)
+    //{
+    //    printf("token%u type: %s\n", x, token_types[(uint)(&tokens[x])->type]);
+    //    printf("token%u size: %u\n", x, (uint)(&tokens[x])->size);
+    //}
+
+	// we assume the top-level element is an object
+	if (r < 1 || tokens[0].type != JSMN_OBJECT)
+    {
+		printf("Object expected\n");
+		return EXIT_FAILURE;
+	}
+
     frm_config_add_component("comp123", comp123_init);
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config, &i, tokens));
+    TEST_ASSERT_EQUAL_INT(8, i);
 }
 
 TEST_CASE("test frm_config call", "[frm_config]")
@@ -90,9 +127,31 @@ TEST_CASE("test frm_config call", "[frm_config]")
         "\"component\": \"comp123\", "
         "\"params\": [\"119\"] }";
 
+    int i = 0;
+	int r;
+	jsmn_parser p;
+	jsmntok_t tokens[128]; /* We expect no more than 128 tokens */
+
+    // parsed the string into tokens using jsmn
+	jsmn_init(&p);
+	r = jsmn_parse(&p, config, strlen(config), tokens, sizeof(tokens)/sizeof(tokens[0]));
+	if (r < 0)
+    {
+		printf("Failed to parse JSON: %d\n", r);
+        TEST_FAIL();
+	}
+
+	// we assume the top-level element is an object
+	if (r < 1 || tokens[0].type != JSMN_OBJECT)
+    {
+		printf("Object expected\n");
+		return EXIT_FAILURE;
+	}
+
     frm_config_add_component("comp123", comp123_init);
     frm_config_add_function("comp123_work", comp123_work);
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config, &i, tokens));
+    TEST_ASSERT_EQUAL_INT(8, i);
     TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_call("inside", "comp123_work"));
 }

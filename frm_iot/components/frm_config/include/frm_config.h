@@ -18,6 +18,7 @@
 
 #ifndef FRM_CONFIG_H
 #define FRM_CONFIG_H
+#include "jsmn.h"
 
 //#define FUNC_TABLE_SIZE 1024
 //#define COMP_TABLE_SIZE 1024
@@ -27,7 +28,7 @@ typedef unsigned char frm_params_type[8][16];
 
 void frm_config_add_component(char* cmp_name, void (*f)(int argc, frm_params_type argv));
 void frm_config_add_function(char* func_name, void (*f)(void * inst));
-int frm_config_component_init(const char* req);
+int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens);
 int frm_config_call(const char* inst, const char* func);
 
 #endif /** FRM_CONFIG_H */
