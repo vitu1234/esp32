@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Fink Labs GmbH
+ * Copyright 2018, 2019 Fink Labs GmbH
  * Additions Copyright 2018 Espressif Systems (Shanghai) PTE LTD
  * Additions Copyright 2017 Project Iota, Drasko Draskovic (https://github.com/drasko)
  *

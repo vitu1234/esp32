@@ -23,7 +23,6 @@
 //#define FUNC_TABLE_SIZE 1024
 //#define COMP_TABLE_SIZE 1024
 //#define INST_TABLE_SIZE 1024
-//typedef unsigned char JSMN_PARAMS_t[8][16];
 typedef unsigned char frm_params_type[8][16];
 
 void frm_config_add_component(char* cmp_name, void (*f)(int argc, frm_params_type argv));

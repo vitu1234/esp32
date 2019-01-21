@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Fink Labs GmbH
+ * Copyright 2018, 2019 Fink Labs GmbH
  * Additions Copyright 2018 Espressif Systems (Shanghai) PTE LTD
  * Additions Copyright 2017 Project Iota, Drasko Draskovic (https://github.com/drasko)
  *
@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include "jsmn.h"
 #include "frm_config.h"
+#include "esp_log.h"
+
+static const char *TAG = "FRM_CONFIG";
 
 #define FUNC_TABLE_SIZE 1024
 #define COMP_TABLE_SIZE 1024
@@ -32,9 +35,10 @@
 #define ERPC_NULL "null"
 
 
-/**
- * Fowler/Noll/Vo (FNV) hash function, variant 1a
- */
+/// Fowler/Noll/Vo (FNV) hash function, variant 1a
+///
+/// @param cp (const unsigned char*) - name of the component
+/// @return hash
 static size_t fnv1a_hash(const unsigned char* cp)
 {
     size_t hash = 0x811c9dc5;
@@ -45,9 +49,12 @@ static size_t fnv1a_hash(const unsigned char* cp)
     return hash;
 }
 
-/**
- * Helper function to compare strings (from jsmn)
- */
+/// Helper function to compare strings (from jsmn)
+///
+/// @param json (const char *) - json configuration
+/// @param tok (jsmntok_t *) - token
+/// @param s (const char *) - string to compare to
+/// @return 0 match / -1 no match
 static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
     if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
             strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
@@ -57,36 +64,30 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 }
 
 
-/**
- * comp_table is an array of function pointers which usually are init functions of components.
- * Function pointers are defined by the user.
- */
+/// comp_table is an array of function pointers which usually are init functions of components.
+/// Function pointers are defined by the user.
 int (*comp_table[COMP_TABLE_SIZE])(int argc, frm_params_type argv) = {NULL};
 
 
-/**
- * inst_table is an array of pointers. Each pointer points to the result from calling the init
- * function of a component.
- */
+/// inst_table is an array of pointers. Each pointer points to the result from calling the init
+/// function of a component.
 void *inst_table[INST_TABLE_SIZE] = {NULL};
 
 
-/**
- * func_table is an array of function pointers which usually are init functions of components.
- * Function pointers are defined by the user.
- */
+/// func_table is an array of function pointers which usually are functions of components.
+/// Function pointers are defined by the user.
 int (*func_table[FUNC_TABLE_SIZE])(void *) = {NULL};
 
 
-
-/**
- * Add a component:
- *Populate the comp_table by using epc_add_component to add all components.
- *
- * Erpc is platform agnostic - it knows only to parse JSON and call the init function of 
- * a component with name `comp_idx` with the correct parameters. 
- * The actual component functionality is defined with the components init function.
- */
+/// Add a component
+///
+/// Populate the comp_table by using epc_add_component to add all components.
+/// frm_config knows only to parse JSON and call the init function of 
+/// a component with name `comp_idx` with the correct parameters. 
+/// The actual component functionality is defined with the components init function.
+///
+/// @param comp_name (char*) - name of the component
+/// @param f (void *) - init function of the component
 void frm_config_add_component(char* comp_name, void (*f)(int argc, frm_params_type argv))
 {
     unsigned char comp_idx = fnv1a_hash((const unsigned char *)comp_name) % COMP_TABLE_SIZE;
@@ -94,12 +95,11 @@ void frm_config_add_component(char* comp_name, void (*f)(int argc, frm_params_ty
 }
 
 
-/**
- * Add a function:
- * Populate the func_table by using epc_add_function to add all functions.
- *
- * The actual component functionality is defined with the components functions.
- */
+/// Add a function:
+///
+/// Populate the func_table by using frm_config_add_function to add all functions.
+/// @param func_name (char*) - name of the function
+/// @param f (void*) - function
 void frm_config_add_function(char* func_name, void (*f)(void * inst))
 {
     unsigned char func_idx = fnv1a_hash((const unsigned char *)func_name) % FUNC_TABLE_SIZE;
@@ -107,12 +107,8 @@ void frm_config_add_function(char* func_name, void (*f)(void * inst))
 }
 
 
-/**
- * Parse JSON and call adequate component init function from lookup table
- * Store the result of the init function call in inst_table[<name>]
- */
-
-/// parse sense object and return sense instance
+/// Parse JSON and call adequate component init function from lookup table
+/// Store the result of the init function call in inst_table[<name>]
 ///
 /// @param config (char*) - config to read the values
 /// @param i (int*) - number of tokens that already have been parsed
@@ -130,7 +126,7 @@ int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens)
   // assert token is an object
   if (tokens[(*i)].type != JSMN_OBJECT)
   {
-    printf("Object expected\n");
+    ESP_LOGE(TAG, "Object expected");
     return EXIT_FAILURE;
   }
   int object_size = tokens[(*i)].size;
@@ -164,7 +160,7 @@ int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens)
             (*i)++;  // processed key token
             if (tokens[(*i)].type != JSMN_ARRAY)
             {
-                printf("    Params array expected\n");
+                ESP_LOGE(TAG, "Params array expected");
                 return EXIT_FAILURE;
             }
             int array_size = tokens[(*i)].size;
@@ -179,7 +175,7 @@ int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens)
         }
         else 
         {
-            printf("Unexpected key: %.*s\n", tokens[(*i)].end-tokens[(*i)].start,
+            ESP_LOGE(TAG, "Unexpected key: %.*s\n", tokens[(*i)].end-tokens[(*i)].start,
                 config + tokens[(*i)].start);
         }
     }
@@ -190,9 +186,12 @@ int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens)
 }
 
 
-/**
- * call instance with adequate function from lookup tables
- */
+/// Call function on instance
+///
+/// Instance and function both are looked up using 'inst' and 'func' names
+/// @param inst (const char*) - name of the component instance to use
+/// @param func (const char*) - name of the function to call
+/// @return EXIT_SUCCESS / EXIT_FAILURE
 int frm_config_call(const char* inst, const char* func)
 {
     // lookup instance and function
