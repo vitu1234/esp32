@@ -34,10 +34,8 @@ typedef struct {
 int comp123_init(int argc, frm_params_type argv)
 {
     // demo component init use
-    frm_params_type params = {{0}};
     frm_params_type expected_params = {"inside", "119"};
 
-    memcpy(params, argv, sizeof(frm_params_type));
     TEST_ASSERT_EQUAL_STRING(expected_params[0], argv[0]);
     TEST_ASSERT_EQUAL_STRING(expected_params[1], argv[1]);
 
@@ -46,7 +44,7 @@ int comp123_init(int argc, frm_params_type argv)
     return s1;
 }
 
-int comp123_work(demo_t *inst)
+int comp123_work(demo_t *inst, int argc, frm_params_type argv)
 {
     // demo function use; note: this has no parameters besides the struct!
     TEST_ASSERT_EQUAL_INT(42, inst->value);
@@ -68,11 +66,12 @@ TEST_CASE("test frm_config comp123_work", "[frm_config]")
 {
     demo_t s1;
     s1.value = 42;
+    //frm_params_type params = {{0}};
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, comp123_work(&s1));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, comp123_work(&s1, 0, NULL));
 }
 
-TEST_CASE("test frm_config init component", "[frm_config]")
+TEST_CASE("test frm_config_init component", "[frm_config]")
 {
     const char *config = "{"
         "\"name\": \"inside\", "
@@ -82,7 +81,7 @@ TEST_CASE("test frm_config init component", "[frm_config]")
     int i = 0;
 	int r;
 	jsmn_parser p;
-	jsmntok_t tokens[128]; /* We expect no more than 128 tokens */
+	jsmntok_t tokens[128]; // We expect no more than 128 tokens
 
     // parsed the string into tokens using jsmn
 	jsmn_init(&p);
@@ -118,9 +117,10 @@ TEST_CASE("test frm_config init component", "[frm_config]")
 
     TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config, &i, tokens));
     TEST_ASSERT_EQUAL_INT(8, i);
+    TEST_ASSERT_NOT_NULL(frm_config_get_instance("inside"));
 }
 
-TEST_CASE("test frm_config call", "[frm_config]")
+TEST_CASE("test frm_config_call", "[frm_config]")
 {
     const char *config = "{"
         "\"name\": \"inside\", "
@@ -130,7 +130,7 @@ TEST_CASE("test frm_config call", "[frm_config]")
     int i = 0;
 	int r;
 	jsmn_parser p;
-	jsmntok_t tokens[128]; /* We expect no more than 128 tokens */
+	jsmntok_t tokens[128]; // We expect no more than 128 tokens
 
     // parsed the string into tokens using jsmn
 	jsmn_init(&p);
@@ -153,5 +153,12 @@ TEST_CASE("test frm_config call", "[frm_config]")
 
     TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config, &i, tokens));
     TEST_ASSERT_EQUAL_INT(8, i);
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_call("inside", "comp123_work"));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_call("inside", "comp123_work", 0, NULL));
+}
+
+TEST_CASE("test frm_config_get_function", "[frm_config]")
+{
+    frm_config_add_function("comp123_work", comp123_work);
+
+    TEST_ASSERT_EQUAL(comp123_work, frm_config_get_function("comp123_work"));
 }

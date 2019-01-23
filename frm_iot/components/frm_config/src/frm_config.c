@@ -19,10 +19,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
 #include "jsmn.h"
 #include "frm_config.h"
-#include "esp_log.h"
 
+#include "esp_log.h"
 static const char *TAG = "FRM_CONFIG";
 
 #define FUNC_TABLE_SIZE 1024
@@ -76,7 +77,7 @@ void *inst_table[INST_TABLE_SIZE] = {NULL};
 
 /// func_table is an array of function pointers which usually are functions of components.
 /// Function pointers are defined by the user.
-int (*func_table[FUNC_TABLE_SIZE])(void *) = {NULL};
+int (*func_table[FUNC_TABLE_SIZE])(void *, int argc, frm_params_type argv) = {NULL};
 
 
 /// Add a component
@@ -100,7 +101,7 @@ void frm_config_add_component(char* comp_name, void (*f)(int argc, frm_params_ty
 /// Populate the func_table by using frm_config_add_function to add all functions.
 /// @param func_name (char*) - name of the function
 /// @param f (void*) - function
-void frm_config_add_function(char* func_name, void (*f)(void * inst))
+void frm_config_add_function(char* func_name, void (*f)(void * inst, int argc, frm_params_type argv))
 {
     unsigned char func_idx = fnv1a_hash((const unsigned char *)func_name) % FUNC_TABLE_SIZE;
     func_table[func_idx] = f;
@@ -192,12 +193,35 @@ int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens)
 /// @param inst (const char*) - name of the component instance to use
 /// @param func (const char*) - name of the function to call
 /// @return EXIT_SUCCESS / EXIT_FAILURE
-int frm_config_call(const char* inst, const char* func)
+int frm_config_call(const char* inst, const char* func, int argc, frm_params_type argv)
 {
     // lookup instance and function
     unsigned char inst_idx = fnv1a_hash((const unsigned char *)inst) % INST_TABLE_SIZE;
     unsigned char func_idx = fnv1a_hash((const unsigned char *)func) % FUNC_TABLE_SIZE;
 
     // call function with instance
-    return func_table[func_idx](inst_table[inst_idx]);
+    return func_table[func_idx](inst_table[inst_idx], argc, argv);
+}
+
+/// Get instance
+///
+/// Instance looked up using 'inst' name
+/// @param inst (const char*) - name of the component instance to use
+/// @return pointer to instance struct
+void* frm_config_get_instance(const char* inst)
+{
+    unsigned char inst_idx = fnv1a_hash((const unsigned char *)inst) % INST_TABLE_SIZE;
+    return inst_table[inst_idx];
+}
+
+
+/// Get function
+///
+/// Instance and function both are looked up using 'inst' and 'func' names
+/// @param func (const char*) - name of the function to call
+/// @return pointer to function
+void* frm_config_get_function(const char* func)
+{
+    unsigned char func_idx = fnv1a_hash((const unsigned char *)func) % FUNC_TABLE_SIZE;
+    return func_table[func_idx];
 }

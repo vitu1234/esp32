@@ -26,8 +26,10 @@
 typedef unsigned char frm_params_type[8][16];
 
 void frm_config_add_component(char* cmp_name, void (*f)(int argc, frm_params_type argv));
-void frm_config_add_function(char* func_name, void (*f)(void * inst));
+void frm_config_add_function(char* func_name, void (*f)(void * inst, int argc, frm_params_type argv));
 int frm_config_component_init(const char* config, int *i, jsmntok_t *tokens);
-int frm_config_call(const char* inst, const char* func);
+int frm_config_call(const char* inst, const char* func, int argc, frm_params_type argv);
+void* frm_config_get_instance(const char* inst);
+void* frm_config_get_function(const char* inst);
 
 #endif /** FRM_CONFIG_H */
