@@ -44,13 +44,23 @@ int comp123_init(int argc, frm_params_type argv)
     return s1;
 }
 
-int comp123_work(demo_t *inst, int argc, frm_params_type argv)
+int comp123_work2(demo_t *inst, double value)
 {
     // demo function use; note: this has no parameters besides the struct!
     TEST_ASSERT_EQUAL_INT(42, inst->value);
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, value);
 
     return EXIT_SUCCESS;
 }
+
+int comp123_sprintf(demo_t *inst, char* payload)
+{
+  // demo sprintf function use
+  TEST_ASSERT_EQUAL_INT(42, inst->value);
+  sprintf(payload, "value: %d", inst->value);
+  return EXIT_SUCCESS;
+}
+
 
 TEST_CASE("test frm_config add component", "[frm_config]")
 {
@@ -59,16 +69,15 @@ TEST_CASE("test frm_config add component", "[frm_config]")
 
 TEST_CASE("test frm_config add function", "[frm_config]")
 {
-    frm_config_add_function("comp123_do_work", comp123_work);
+    frm_config_add_function("comp123_do_work", comp123_work2);
 }
 
-TEST_CASE("test frm_config comp123_work", "[frm_config]")
+TEST_CASE("test frm_config comp123_work2", "[frm_config]")
 {
     demo_t s1;
     s1.value = 42;
-    //frm_params_type params = {{0}};
 
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, comp123_work(&s1, 0, NULL));
+    TEST_ASSERT_EQUAL(EXIT_SUCCESS, comp123_work2(&s1, 0.0));
 }
 
 TEST_CASE("test frm_config_init component", "[frm_config]")
@@ -120,45 +129,21 @@ TEST_CASE("test frm_config_init component", "[frm_config]")
     TEST_ASSERT_NOT_NULL(frm_config_get_instance("inside"));
 }
 
-TEST_CASE("test frm_config_call", "[frm_config]")
+TEST_CASE("test frm_config_get_function_sprintf", "[frm_config]")
 {
-    const char *config = "{"
-        "\"name\": \"inside\", "
-        "\"component\": \"comp123\", "
-        "\"params\": [\"119\"] }";
+    char payload[150];
+    frm_config_add_function("comp123_sprintf", comp123_sprintf);
 
-    int i = 0;
-	int r;
-	jsmn_parser p;
-	jsmntok_t tokens[128]; // We expect no more than 128 tokens
+    // TODO use type for these kind of pointers!
+    int (*func)(void*, char*);
 
-    // parsed the string into tokens using jsmn
-	jsmn_init(&p);
-	r = jsmn_parse(&p, config, strlen(config), tokens, sizeof(tokens)/sizeof(tokens[0]));
-	if (r < 0)
-    {
-		printf("Failed to parse JSON: %d\n", r);
-        TEST_FAIL();
-	}
+    func = frm_config_get_function_sprintf("comp123");
+    TEST_ASSERT_EQUAL(comp123_sprintf, func);
 
-	// we assume the top-level element is an object
-	if (r < 1 || tokens[0].type != JSMN_OBJECT)
-    {
-		printf("Object expected\n");
-		return EXIT_FAILURE;
-	}
-
-    frm_config_add_component("comp123", comp123_init);
-    frm_config_add_function("comp123_work", comp123_work);
-
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_component_init(config, &i, tokens));
-    TEST_ASSERT_EQUAL_INT(8, i);
-    TEST_ASSERT_EQUAL(EXIT_SUCCESS, frm_config_call("inside", "comp123_work", 0, NULL));
-}
-
-TEST_CASE("test frm_config_get_function", "[frm_config]")
-{
-    frm_config_add_function("comp123_work", comp123_work);
-
-    TEST_ASSERT_EQUAL(comp123_work, frm_config_get_function("comp123_work"));
+    demo_t s1;
+    s1.value = 42;
+    //demo_t *s1 = malloc(sizeof(demo_t));
+    //s1->value = 42;
+    func(&s1, payload);
+    TEST_ASSERT_EQUAL_STRING("value: 42", payload);
 }
